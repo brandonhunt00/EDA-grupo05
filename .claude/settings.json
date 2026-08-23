@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "ask": [
+      "Bash(aws cloudformation delete-stack *)",
+      "Bash(aws cloudformation deploy *)",
+      "Bash(aws s3 rm *)",
+      "Bash(aws ec2 terminate-instances *)",
+      "Bash(aws athena *)"
+    ],
+    "defaultMode": "auto"
+  }
+}
