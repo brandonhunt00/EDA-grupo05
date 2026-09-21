@@ -1,0 +1,14 @@
+# State - nunca commitar (a partir do Passo 7 vai para o backend remoto S3;
+# ate la fica local; pode conter dados sensiveis e e regenerado a cada apply).
+terraform.tfstate
+terraform.tfstate.*
+*.tfplan
+.terraform/
+
+# backend.hcl tem o nome do bucket da conta - nao commitar (Passo 7).
+backend.hcl
+
+# Segredos locais
+*.auto.tfvars
+override.tf
+override.tf.json
