@@ -1,0 +1,14 @@
+.DS_Store
+saida/
+Workgroup/
+database/
+
+# credenciais - nunca devem existir aqui, mas por seguranca
+.env
+.env.*
+*.pem
+*.key
+credentials
+credentials.json
+.aws/
+aws_credentials*
