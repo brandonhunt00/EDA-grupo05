@@ -1,0 +1,4 @@
+agendamento_id,paciente_id,clinica_id,especialidade,profissional_id,data_agendamento,data_consulta,hora_consulta,status,canal_agendamento,tipo_consulta
+A000001,P0001,C01,Cardiologia,M001,2026-08-01,2026-08-10,08:00,REALIZADO,APP,ROTINA
+A000002,P0002,C01,Dermatologia,M002,2026-08-01,2026-08-10,09:00,NO_SHOW,SITE,ROTINA
+A000003,P0003,C02,Ortopedia,M003,2026-08-02,2026-08-12,10:30,REALIZADO,TELEFONE,RETORNO
