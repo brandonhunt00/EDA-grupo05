@@ -508,8 +508,8 @@ Esses itens não fazem parte dos requisitos avaliados na Parte 1.
 
 ## 22. Identificação
 
-**Disciplina:** EDA262 — Engenharia de Dados
+**Disciplina:** EDA — Engenharia de Dados
 **Entrega:** Parte 1 — AV1
 **Cenário:** Análise de faltas em agendamentos de clínica
 **Slug:** `clinica-no-show`
-**Grupo:** `gNN`
+**Grupo:** `g05`
