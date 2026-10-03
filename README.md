@@ -1,220 +1,84 @@
 # eda2026-projeto-g05
 
-# EDA — Projeto de Engenharia de Dados
-
-## Análise de Perfil, Sazonalidade e Impacto Financeiro de No-Shows em uma Rede de Clínicas
+## EDA — Projeto de Engenharia de Dados  
+### Análise de No-Show em uma Rede de Clínicas
 
 Projeto desenvolvido para a disciplina **EDA — Engenharia de Dados**.
 
-A Parte 1 do projeto tem como objetivo provisionar, utilizando **100% Terraform**, um Data Lake na AWS capaz de armazenar, catalogar e consultar dados de agendamentos de uma grande rede de clínicas.
+A Parte 1 tem como objetivo provisionar, utilizando **100% Terraform**, um Data Lake na AWS capaz de armazenar, catalogar e consultar dados de agendamentos de uma grande rede de clínicas.
 
-A solução busca analisar o comportamento de pacientes que agendam consultas e não comparecem, identificando padrões relacionados ao perfil dos pacientes, unidades, especialidades e períodos do ano, além de estimar o impacto financeiro mensal causado pelos no-shows.
-
----
-
-# 1. Cenário
-
-O cenário representa uma **grande rede de clínicas com unidades distribuídas por diferentes regiões do Brasil**.
-
-Cada unidade realiza diariamente diversos agendamentos de consultas médicas e registra informações relacionadas aos pacientes, profissionais, especialidades, datas, horários e resultado do atendimento.
-
-Por se tratar de uma rede de grande porte, diferentes unidades podem utilizar sistemas e padrões distintos para registrar informações equivalentes.
-
-Por exemplo, o sexo de um paciente pode ser registrado como:
-
-```text
-M
-Masculino
-masculino
-MALE
-```
-
-Enquanto o status de uma ausência pode aparecer como:
-
-```text
-NO_SHOW
-No-Show
-no_show
-FALTOU
-AUSENTE
-```
-
-Essas diferenças representam um problema de qualidade e padronização dos dados antes que eles possam ser utilizados em análises corporativas.
-
-Além disso, a rede enfrenta um problema operacional relevante: pacientes que realizam o agendamento de uma consulta, mas não comparecem no dia e horário marcados.
-
-Esse comportamento é denominado **no-show**.
-
-Quando ocorre um no-show, um horário que poderia ter sido utilizado por outro paciente permanece ocioso, gerando desperdício da capacidade de atendimento e impacto financeiro para a clínica.
-
-O projeto busca consolidar essas informações para entender:
-
-- quem são os pacientes que apresentam maior ocorrência de no-show;
-- em quais unidades o problema é mais frequente;
-- quais especialidades apresentam maior taxa de faltas;
-- em quais períodos do ano as faltas aumentam;
-- quanto os horários não utilizados representam financeiramente para a rede.
-
-O slug definido para o cenário é:
-
-```text
-clinica-no-show
-```
+A análise busca identificar **quem mais falta às consultas, quando essas faltas acontecem e qual o impacto financeiro mensal estimado dos no-shows**.
 
 ---
 
-# 2. Problema de negócio
+## 1. Cenário
 
-Uma grande rede de clínicas pode realizar milhares de agendamentos todos os meses.
+O cenário representa uma **rede de clínicas com unidades distribuídas pelo Brasil**.
 
-Mesmo uma taxa relativamente pequena de pacientes que não comparecem pode representar uma quantidade significativa de horários ociosos quando analisada em escala nacional.
+Cada unidade registra agendamentos de consultas, porém diferentes sistemas podem representar os mesmos dados de formas distintas.
 
-Conhecer somente a quantidade de faltas, entretanto, não é suficiente para compreender o problema.
+Exemplos:
 
-É necessário relacionar os no-shows com características dos agendamentos e dos pacientes, como:
+```text
+M | Masculino | MALE
+NO_SHOW | No-Show | FALTOU
+Cardiologia | CARDIOLOGIA | Cardio
+```
 
-- faixa etária;
-- sexo;
-- unidade;
-- estado;
-- região;
-- especialidade;
-- canal de agendamento;
-- tipo de consulta;
-- antecedência do agendamento;
-- histórico de faltas;
-- mês da consulta.
+Esses valores são normalizados antes da utilização do dataset trusted.
 
-Também é necessário relacionar essas ausências ao valor financeiro associado ao horário reservado.
-
-Dessa forma, o projeto busca transformar dados operacionais de agendamentos em informações que permitam compreender **perfil, sazonalidade e impacto financeiro dos no-shows**.
+Além da inconsistência entre unidades, a rede enfrenta o problema de pacientes que agendam consultas e não comparecem, situação denominada **no-show**.
 
 ---
 
-# 3. Pergunta de negócio
-
-A pergunta analítica principal do projeto é:
+## 2. Pergunta de negócio
 
 > **Qual é o impacto financeiro mensal dos no-shows na rede de clínicas e como esse impacto se distribui por perfil demográfico dos pacientes, unidade e especialidade?**
 
-A partir dessa pergunta principal, a análise também permitirá responder questões complementares, como:
+A análise também permite observar:
 
-- Qual é a taxa mensal de no-show da rede?
-- Quais faixas etárias apresentam maior taxa de no-show?
-- Existe diferença na taxa de no-show entre os sexos registrados?
-- Quais unidades apresentam maior ocorrência de faltas?
-- Quais unidades apresentam maior impacto financeiro?
-- Quais especialidades apresentam maior taxa de no-show?
-- Quais especialidades representam maior impacto financeiro?
-- Existem meses do ano com maior concentração de faltas?
-- Determinados canais de agendamento apresentam maior taxa de no-show?
-- Pacientes com histórico anterior de faltas apresentam maior recorrência?
+- faixa etária;
+- sexo;
+- unidade e região;
+- especialidade;
+- canal de agendamento;
+- histórico de faltas;
+- sazonalidade mensal.
 
-As consultas serão executadas utilizando o **Amazon Athena**.
-
-As análises buscarão identificar associações e padrões existentes nos dados, sem estabelecer relações causais.
+As conclusões são baseadas nos resultados encontrados nos dados, sem pressupor previamente qual perfil apresenta mais faltas.
 
 ---
 
-# 4. Evento analisado
+## 3. Evento e grão
 
-O evento utilizado pelo projeto é:
+**Evento:** um agendamento de consulta.
 
-> **Um agendamento de consulta realizado em uma das unidades da rede de clínicas.**
-
-Cada registro representa um evento de agendamento e contém informações relacionadas:
-
-- ao paciente;
-- à unidade;
-- à especialidade;
-- ao profissional;
-- à data e horário;
-- ao canal de agendamento;
-- ao resultado da consulta;
-- ao valor associado ao atendimento.
-
----
-
-# 5. Grão da tabela trusted
-
-O grão da tabela `agendamentos` é:
+**Grão da tabela trusted:**
 
 > **1 registro = 1 agendamento de consulta em uma unidade da rede.**
 
-Cada registro possui um identificador único:
+Cada agendamento é identificado por:
 
 ```text
 agendamento_id
 ```
 
-Esse grão permite relacionar cada agendamento individualmente com:
-
-- perfil do paciente;
-- unidade;
-- especialidade;
-- profissional;
-- período;
-- status;
-- histórico de faltas;
-- valor da consulta.
-
-A partir desse nível de detalhe, será possível realizar diferentes agregações no Amazon Athena sem perder as informações necessárias para responder à pergunta de negócio.
+Esse nível de detalhe permite realizar agregações posteriores por paciente, mês, unidade, especialidade e perfil.
 
 ---
 
-# 6. Perfil analisado
+## 4. Métricas
 
-O projeto utiliza um **perfil demográfico e comportamental relacionado ao processo de agendamento**.
+### Taxa de no-show
 
-Não serão utilizadas características psicológicas ou classificações de personalidade.
-
-O perfil será construído a partir de atributos como:
-
-```text
-faixa_etaria
-sexo
-canal_agendamento
-tipo_consulta
-dias_antecedencia
-no_shows_anteriores
-unidade_id
-estado_unidade
-regiao_unidade
-especialidade
-```
-
-Essas informações permitirão identificar padrões nos grupos que apresentam maior ou menor taxa de ausência.
-
-Por exemplo, após a execução das consultas, poderá ser identificado que determinada faixa etária apresenta uma taxa de no-show superior à média da rede.
-
-Qualquer conclusão desse tipo será obtida somente a partir dos resultados efetivamente encontrados no conjunto de dados.
-
----
-
-# 7. Métricas
-
-O projeto trabalhará com três métricas principais.
-
-## 7.1 Taxa de no-show
-
-Para o cálculo da taxa de no-show serão consideradas apenas consultas cujo resultado já é conhecido:
+São consideradas apenas consultas com resultado conhecido:
 
 ```text
 REALIZADO
 NO_SHOW
 ```
 
-Consultas com status:
-
-```text
-AGENDADO
-CONFIRMADO
-CANCELADO
-```
-
-não serão utilizadas no denominador da taxa.
-
-A métrica será:
+A fórmula é:
 
 ```text
                  quantidade de NO_SHOW
@@ -222,366 +86,146 @@ Taxa no-show = --------------------------- × 100
                REALIZADO + NO_SHOW
 ```
 
-Essa abordagem evita que consultas canceladas ou ainda não realizadas reduzam artificialmente a taxa de faltas.
+Status como `CANCELADO`, `AGENDADO` e `CONFIRMADO` não participam do cálculo.
 
----
-
-## 7.2 Quantidade de no-shows
-
-Também será analisada a quantidade absoluta de agendamentos com:
+### Impacto financeiro estimado
 
 ```text
-status = 'NO_SHOW'
-```
-
-Essa métrica será utilizada principalmente para compreender o volume de faltas por:
-
-- mês;
-- unidade;
-- especialidade;
-- perfil.
-
-A quantidade absoluta será analisada juntamente com a taxa de no-show para evitar interpretações incorretas.
-
----
-
-## 7.3 Impacto financeiro estimado
-
-Cada consulta possui um valor associado ao horário reservado.
-
-Quando um paciente não comparece, esse valor será considerado como **impacto financeiro estimado do no-show**.
-
-A métrica utilizada será:
-
-```text
-Impacto financeiro =
 SUM(valor_consulta)
 WHERE status = 'NO_SHOW'
 ```
 
-Por exemplo:
-
-```text
-Valor da consulta: R$ 250,00
-Status: NO_SHOW
-
-Impacto financeiro estimado: R$ 250,00
-```
-
-Caso ocorram 2.000 no-shows em um mês com valor médio de R$ 220,00:
-
-```text
-2.000 × R$ 220,00 = R$ 440.000,00
-```
-
-Neste projeto, o valor será tratado como **impacto financeiro estimado associado aos horários reservados e não utilizados**.
-
-Esse valor não representa necessariamente um prejuízo contábil integral da clínica.
+O valor representa a **receita potencial associada ao horário reservado e não utilizado**, não necessariamente o prejuízo contábil integral da clínica.
 
 ---
 
-# 8. Tabela trusted
+## 5. Tabela trusted
 
-A tabela utilizada no projeto será chamada:
+A tabela principal será:
 
 ```text
 agendamentos
 ```
 
-O schema será declarado diretamente no Terraform.
+Schema:
 
-| Campo | Tipo | Descrição |
-|---|---|---|
-| `agendamento_id` | string | Identificador único do agendamento |
-| `paciente_id` | string | Identificador anonimizado do paciente |
-| `unidade_id` | string | Identificador padronizado da unidade |
-| `estado_unidade` | string | Estado onde a unidade está localizada |
-| `regiao_unidade` | string | Região geográfica da unidade |
-| `sexo` | string | Sexo registrado no cadastro |
-| `faixa_etaria` | string | Faixa etária do paciente |
-| `especialidade` | string | Especialidade médica |
-| `profissional_id` | string | Identificador do profissional |
-| `data_agendamento` | date | Data em que o agendamento foi realizado |
-| `data_consulta` | date | Data prevista para a consulta |
-| `hora_consulta` | string | Horário da consulta |
-| `status` | string | Status final ou atual do agendamento |
-| `canal_agendamento` | string | Canal utilizado para realizar o agendamento |
-| `tipo_consulta` | string | Tipo da consulta |
-| `valor_consulta` | decimal | Valor associado à consulta |
-| `dias_antecedencia` | integer | Quantidade de dias entre agendamento e consulta |
-| `no_shows_anteriores` | integer | Quantidade de faltas anteriores do paciente |
-| `sistema_origem` | string | Identificação do sistema de origem do registro |
+| Campo | Tipo |
+|---|---|
+| `agendamento_id` | string |
+| `paciente_id` | string |
+| `unidade_id` | string |
+| `estado_unidade` | string |
+| `regiao_unidade` | string |
+| `sexo` | string |
+| `faixa_etaria` | string |
+| `especialidade` | string |
+| `profissional_id` | string |
+| `data_agendamento` | date |
+| `data_consulta` | date |
+| `hora_consulta` | string |
+| `status` | string |
+| `canal_agendamento` | string |
+| `tipo_consulta` | string |
+| `valor_consulta` | decimal |
+| `dias_antecedencia` | integer |
+| `no_shows_anteriores` | integer |
+| `sistema_origem` | string |
 
-Dados como nome completo, CPF, telefone e endereço não são necessários para responder à pergunta de negócio e não fazem parte do conjunto analítico.
+O schema é **declarado diretamente no Terraform**.
 
----
-
-# 9. Exemplo do dataset
-
-```csv
-agendamento_id,paciente_id,unidade_id,estado_unidade,regiao_unidade,sexo,faixa_etaria,especialidade,profissional_id,data_agendamento,data_consulta,hora_consulta,status,canal_agendamento,tipo_consulta,valor_consulta,dias_antecedencia,no_shows_anteriores,sistema_origem
-A000001,P0001,U001,PE,Nordeste,MASCULINO,22-30,Cardiologia,M001,2026-06-01,2026-06-15,08:00,NO_SHOW,APP,ROTINA,250.00,14,2,SISTEMA_A
-A000002,P0002,U008,SP,Sudeste,FEMININO,31-45,Dermatologia,M017,2026-06-03,2026-06-20,10:30,REALIZADO,SITE,RETORNO,180.00,17,0,SISTEMA_B
-A000003,P0003,U014,RJ,Sudeste,MASCULINO,22-30,Ortopedia,M030,2026-11-10,2026-12-05,14:00,NO_SHOW,TELEFONE,ROTINA,320.00,25,1,SISTEMA_C
-```
+Não é utilizado Glue Crawler.
 
 ---
 
-# 10. Qualidade e normalização dos dados
+## 6. Qualidade dos dados
 
-Como a rede possui diferentes unidades e sistemas, o cenário permite a existência de inconsistências plausíveis nos dados de origem.
+O cenário considera inconsistências plausíveis provenientes das diferentes unidades.
 
-Para a Parte 1, o projeto utilizará um **dataset trusted já padronizado**.
+Exemplos:
 
-A construção de uma arquitetura de camadas ou pipeline automatizado de transformação não faz parte do escopo desta entrega.
+```text
+M / Masculino / MALE
+→ MASCULINO
 
-As regras utilizadas para padronizar os dados serão documentadas no arquivo `DECISOES.md`.
+No-Show / FALTOU / AUSENTE
+→ NO_SHOW
+
+Cardio / CARDIOLOGIA
+→ Cardiologia
+
+R$ 250,00 / 250,00 / 250
+→ 250.00
+```
+
+Também podem existir:
+
+- datas em formatos diferentes;
+- canais de agendamento inconsistentes;
+- registros duplicados pelo `agendamento_id`.
+
+Para a Parte 1, será utilizado um **dataset trusted já normalizado**. A construção de pipelines e camadas não faz parte do escopo desta entrega.
+
+As regras de normalização são documentadas no `DECISOES.md`.
 
 ---
 
-## 10.1 Sexo
-
-Exemplos encontrados na origem:
+## 7. Arquitetura
 
 ```text
-M
-Masc
-Masculino
-masculino
-MALE
+Dataset trusted
+      │
+      ▼
+  Amazon S3
+      │
+      ▼
+Glue Data Catalog
+      │
+      ▼
+ Glue Database
+      │
+      ▼
+Glue Table
+agendamentos
+      │
+      ▼
+Amazon Athena
+      │
+      ▼
+Consultas analíticas
+      │
+ ┌────┼───────────┐
+ ▼    ▼           ▼
+Perfil Sazonalidade Impacto
+                  financeiro
 ```
 
-Valor padronizado:
-
-```text
-MASCULINO
-```
-
-Outro exemplo:
-
-```text
-F
-Fem
-Feminino
-feminino
-FEMALE
-```
-
-Valor padronizado:
-
-```text
-FEMININO
-```
+Toda a infraestrutura é provisionada utilizando Terraform.
 
 ---
 
-## 10.2 Status
+## 8. Requisitos da Parte 1
 
-Dados de origem:
+O projeto atende aos requisitos da AV1:
 
-```text
-NO_SHOW
-No-Show
-no_show
-FALTOU
-AUSENTE
-```
-
-Valor trusted:
-
-```text
-NO_SHOW
-```
-
----
-
-## 10.3 Especialidade
-
-Dados de origem:
-
-```text
-Cardiologia
-cardiologia
-CARDIOLOGIA
-Cardio
-CARD
-```
-
-Valor trusted:
-
-```text
-Cardiologia
-```
+| Requisito | Implementação |
+|---|---|
+| Bucket | Amazon S3 |
+| Catálogo | AWS Glue Data Catalog |
+| Tabela trusted | `agendamentos` |
+| Grão declarado | 1 linha = 1 agendamento |
+| Schema no IaC | Declarado no Terraform |
+| Crawler | Não utilizado |
+| Workgroup | Amazon Athena Workgroup |
+| Stack em módulo | `modules/data_lake/` |
+| Backend remoto | S3 + DynamoDB |
+| Workspace | Terraform Workspace |
+| Consulta analítica | Amazon Athena |
+| Custo | `Data scanned` + custo estimado |
+| Destroy | Sem recursos órfãos |
 
 ---
 
-## 10.4 Datas
-
-Dados de origem:
-
-```text
-15/07/2026
-2026-07-15
-15-07-2026
-```
-
-Valor trusted:
-
-```text
-2026-07-15
-```
-
----
-
-## 10.5 Valores monetários
-
-Dados de origem:
-
-```text
-250
-250.00
-250,00
-R$ 250,00
-```
-
-Valor trusted:
-
-```text
-250.00
-```
-
----
-
-## 10.6 Canal de agendamento
-
-Dados de origem:
-
-```text
-app
-APP
-Aplicativo
-mobile
-```
-
-Valor trusted:
-
-```text
-APP
-```
-
----
-
-## 10.7 Duplicidade
-
-Também podem existir registros repetidos com o mesmo:
-
-```text
-agendamento_id
-```
-
-Essas duplicidades devem ser eliminadas do dataset trusted para evitar que uma mesma consulta seja contabilizada mais de uma vez.
-
----
-
-# 11. Faixas etárias
-
-Para permitir análises por perfil, os pacientes serão agrupados em faixas etárias.
-
-As categorias utilizadas serão:
-
-```text
-0-17
-18-21
-22-30
-31-45
-46-60
-61+
-```
-
-A faixa etária já estará presente no dataset trusted utilizado pela Parte 1.
-
----
-
-# 12. Arquitetura da Parte 1
-
-A infraestrutura da Parte 1 utiliza:
-
-- Amazon S3;
-- AWS Glue Data Catalog;
-- AWS Glue Database;
-- AWS Glue Table;
-- Amazon Athena;
-- Athena Workgroup;
-- Terraform;
-- Amazon S3 para armazenamento remoto do Terraform State;
-- DynamoDB para controle de lock;
-- Terraform Workspace.
-
-O fluxo principal será:
-
-```text
-Dados das diferentes unidades
-            │
-            ▼
-Padronização dos dados
-            │
-            ▼
-      Dataset Trusted
-            │
-            ▼
-        Amazon S3
-            │
-            ▼
-    Glue Data Catalog
-            │
-            ▼
-      Glue Database
-            │
-            ▼
-Glue Table: agendamentos
-            │
-            ▼
-      Amazon Athena
-            │
-            ▼
-    Consultas analíticas
-            │
-    ┌───────┼───────────┐
-    ▼       ▼           ▼
- Perfil  Sazonalidade  Impacto
-No-show               financeiro
-```
-
-O **schema da Glue Table será declarado diretamente no código Terraform**.
-
-Não será utilizado Glue Crawler.
-
----
-
-# 13. Infraestrutura provisionada
-
-O Terraform será responsável por provisionar do zero:
-
-```text
-Amazon S3
-AWS Glue Database
-AWS Glue Table
-Amazon Athena Workgroup
-```
-
-A stack será organizada em módulo Terraform.
-
-Também será utilizado:
-
-```text
-S3 + DynamoDB
-```
-
-para o backend remoto do Terraform.
-
----
-
-# 14. Organização do repositório
+## 9. Estrutura do repositório
 
 ```text
 eda2026-projeto-g05/
@@ -608,8 +252,236 @@ eda2026-projeto-g05/
 │   └── sazonalidade.sql
 │
 ├── evidencias/
-│
 ├── verificacao/
 │   └── verifica.sh
 │
-├── DECISO
+├── DECISOES.md
+├── README.md
+└── apresentacao-parte-1-g05.pdf
+```
+
+---
+
+## 10. Backend remoto e workspace
+
+O Terraform utiliza backend remoto:
+
+```text
+Terraform State → Amazon S3
+State Lock      → DynamoDB
+```
+
+O bucket de state é separado do bucket do Data Lake.
+
+O projeto também utiliza Terraform Workspace:
+
+```bash
+terraform workspace new dev
+```
+
+ou:
+
+```bash
+terraform workspace select dev
+```
+
+---
+
+## 11. Tags obrigatórias
+
+```hcl
+tags = {
+  turma   = "eda262"
+  grupo   = "g05"
+  projeto = "engenharia-de-dados"
+}
+```
+
+---
+
+## 12. Deploy
+
+```bash
+cd parte-1
+
+terraform init
+
+terraform workspace select dev
+
+terraform fmt -recursive
+terraform validate
+terraform plan
+terraform apply
+```
+
+Após o `apply`, devem existir:
+
+- bucket S3;
+- Glue Database;
+- Glue Table;
+- Athena Workgroup.
+
+---
+
+## 13. Dataset no S3
+
+Exemplo:
+
+```bash
+aws s3 cp dados/agendamentos.csv \
+s3://eda2026-g05-lake-trusted/
+```
+
+Verificação:
+
+```bash
+aws s3 ls s3://eda2026-g05-lake-trusted/
+```
+
+---
+
+## 14. Consulta principal
+
+A consulta principal relaciona **mês, perfil, unidade, especialidade, taxa de no-show e impacto financeiro**.
+
+```sql
+SELECT
+    YEAR(data_consulta) AS ano,
+    MONTH(data_consulta) AS mes,
+    faixa_etaria,
+    sexo,
+    unidade_id,
+    especialidade,
+
+    COUNT(*) AS total_consultas,
+
+    SUM(
+        CASE
+            WHEN status = 'NO_SHOW' THEN 1
+            ELSE 0
+        END
+    ) AS total_no_shows,
+
+    ROUND(
+        100.0 *
+        SUM(
+            CASE
+                WHEN status = 'NO_SHOW' THEN 1
+                ELSE 0
+            END
+        ) / COUNT(*),
+        2
+    ) AS taxa_no_show,
+
+    ROUND(
+        SUM(
+            CASE
+                WHEN status = 'NO_SHOW'
+                THEN valor_consulta
+                ELSE 0
+            END
+        ),
+        2
+    ) AS impacto_financeiro
+
+FROM agendamentos
+
+WHERE status IN ('REALIZADO', 'NO_SHOW')
+
+GROUP BY
+    YEAR(data_consulta),
+    MONTH(data_consulta),
+    faixa_etaria,
+    sexo,
+    unidade_id,
+    especialidade
+
+ORDER BY impacto_financeiro DESC;
+```
+
+A consulta responde à pergunta:
+
+> **Qual é o impacto financeiro mensal dos no-shows na rede de clínicas e como esse impacto se distribui por perfil demográfico dos pacientes, unidade e especialidade?**
+
+---
+
+## 15. Custo da consulta
+
+Após a execução no Athena serão registrados:
+
+```text
+Dados processados: <DATA_SCANNED>
+Custo estimado:    <VALOR_MEDIDO>
+```
+
+Esses valores serão adicionados ao `DECISOES.md` e às evidências após a execução real.
+
+---
+
+## 16. Verificação
+
+O script:
+
+```text
+verificacao/verifica.sh
+```
+
+verifica os principais critérios da entrega.
+
+Exemplo de saída:
+
+```text
+[PASSA] Bucket existe
+[PASSA] Tags obrigatórias encontradas
+[PASSA] Glue Database existe
+[PASSA] Glue Table existe
+[PASSA] Athena Workgroup existe
+```
+
+Execução:
+
+```bash
+chmod +x verificacao/verifica.sh
+./verificacao/verifica.sh
+```
+
+---
+
+## 17. Destroy
+
+A infraestrutura é completamente removível com:
+
+```bash
+terraform destroy
+```
+
+Após a execução, não devem permanecer recursos órfãos relacionados ao projeto.
+
+---
+
+## 18. Fora do escopo da Parte 1
+
+Não fazem parte desta entrega:
+
+- Parquet;
+- particionamento;
+- arquitetura de camadas;
+- idempotência;
+- Glue Crawler;
+- Glue ETL;
+- Lambda;
+- Step Functions;
+- EMR;
+- ECS;
+- Kinesis.
+
+---
+
+## 19. Identificação
+
+**Disciplina:** EDA — Engenharia de Dados  
+**Entrega:** Parte 1 — AV1  
+**Grupo:** `g05`  
+**Cenário:** Perfil, sazonalidade e impacto financeiro de no-shows em uma rede de clínicas  
+**Slug:** `clinica-no-show`  
+**Repositório:** `eda2026-projeto-g05`
