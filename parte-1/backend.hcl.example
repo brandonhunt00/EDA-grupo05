@@ -1,0 +1,5 @@
+bucket         = "SUBSTITUIR_PELO_OUTPUT_DO_BOOTSTRAP"
+key            = "parte-1/terraform.tfstate"
+region         = "us-east-1"
+dynamodb_table = "SUBSTITUIR_PELO_OUTPUT_DO_BOOTSTRAP"
+encrypt        = true

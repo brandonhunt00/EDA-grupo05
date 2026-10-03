@@ -1,6 +1,7 @@
-module "data_lake" {
-  source = "./modules/data_lake"
+module "lake" {
+  source = "./modules/lake"
 
-  grupo      = var.grupo
-  aws_region = var.aws_region
+  prefixo       = var.prefixo
+  teto_bytes    = var.teto_bytes
+  dataset_local = var.dataset_local
 }

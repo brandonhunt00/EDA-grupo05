@@ -1,35 +1,24 @@
 #!/usr/bin/env bash
 set -u
 
-GRUPO="${GRUPO:-gNN}"
+PREFIXO="${PREFIXO:-eda262-g05}"
 REGION="${AWS_REGION:-us-east-1}"
-BUCKET="eda262-${GRUPO}-lake-trusted"
-GLUE_DB="eda262_${GRUPO}_clinica"
-WORKGROUP="eda262-${GRUPO}-athena"
+LAKE="${PREFIXO}-lake-trusted"
+DB="$(echo "${PREFIXO}_clinica" | tr '-' '_')"
+TABLE="agendamentos"
+WG="${PREFIXO}-athena"
 
-passa() { echo "[PASSA] $1"; }
-falha() { echo "[FALHA] $1"; }
+passa(){ echo "[PASSA] $1"; }
+falha(){ echo "[FALHA] $1"; }
 
-if aws s3api head-bucket --bucket "$BUCKET" 2>/dev/null; then
-  passa "Bucket existe: $BUCKET"
-else
-  falha "Bucket não encontrado: $BUCKET"
+if [[ "${1:-}" == "--pos-destroy" ]]; then
+  aws s3api head-bucket --bucket "$LAKE" 2>/dev/null && falha "Bucket ainda existe" || passa "Bucket removido"
+  aws glue get-database --name "$DB" --region "$REGION" >/dev/null 2>&1 && falha "Glue Database ainda existe" || passa "Glue Database removido"
+  aws athena get-work-group --work-group "$WG" --region "$REGION" >/dev/null 2>&1 && falha "Athena Workgroup ainda existe" || passa "Athena Workgroup removido"
+  exit 0
 fi
 
-if aws glue get-database --name "$GLUE_DB" --region "$REGION" >/dev/null 2>&1; then
-  passa "Glue Database existe: $GLUE_DB"
-else
-  falha "Glue Database não encontrado: $GLUE_DB"
-fi
-
-if aws glue get-table --database-name "$GLUE_DB" --name agendamentos --region "$REGION" >/dev/null 2>&1; then
-  passa "Glue Table existe: agendamentos"
-else
-  falha "Glue Table não encontrada: agendamentos"
-fi
-
-if aws athena get-work-group --work-group "$WORKGROUP" --region "$REGION" >/dev/null 2>&1; then
-  passa "Athena Workgroup existe: $WORKGROUP"
-else
-  falha "Athena Workgroup não encontrado: $WORKGROUP"
-fi
+aws s3api head-bucket --bucket "$LAKE" 2>/dev/null && passa "Bucket do Data Lake existe" || falha "Bucket não existe"
+aws glue get-database --name "$DB" --region "$REGION" >/dev/null 2>&1 && passa "Glue Database existe" || falha "Glue Database não existe"
+aws glue get-table --database-name "$DB" --name "$TABLE" --region "$REGION" >/dev/null 2>&1 && passa "Glue Table existe" || falha "Glue Table não existe"
+aws athena get-work-group --work-group "$WG" --region "$REGION" >/dev/null 2>&1 && passa "Athena Workgroup existe" || falha "Athena Workgroup não existe"

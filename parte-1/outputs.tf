@@ -1,14 +1,6 @@
-output "bucket_trusted" {
-  description = "Nome do bucket da camada trusted"
-  value       = module.data_lake.bucket_trusted
-}
-
-output "glue_database" {
-  description = "Nome do Glue Database"
-  value       = module.data_lake.glue_database
-}
-
-output "athena_workgroup" {
-  description = "Nome do Athena Workgroup"
-  value       = module.data_lake.athena_workgroup
-}
+output "lake_bucket_name"           { value = module.lake.lake_bucket_name }
+output "athena_results_bucket_name" { value = module.lake.athena_results_bucket_name }
+output "glue_database_name"         { value = module.lake.glue_database_name }
+output "glue_table_name"            { value = module.lake.glue_table_name }
+output "athena_workgroup_name"      { value = module.lake.athena_workgroup_name }
+output "workspace"                  { value = terraform.workspace }

@@ -1,0 +1,3 @@
+aws_region = "us-east-1"
+prefixo    = "eda262-g05"
+teto_bytes = 117455962
