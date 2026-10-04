@@ -1,0 +1,9 @@
+# State local — nunca commitar (pode conter dados sensiveis e é regenerado a cada apply).
+terraform.tfstate
+terraform.tfstate.backup
+.terraform/
+
+# Segredos locais
+*.auto.tfvars
+override.tf
+override.tf.json
