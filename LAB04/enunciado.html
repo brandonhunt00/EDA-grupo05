@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exercício 04 — a meta de custo, em Parquet particionado</title>
+<style>
+  :root{--laranja:#F15A22;--ink:#1A1A1A;--grafite:#4D4D4D;--cinza:#8A8A8A;--claro:#E8E8E8;--papel:#FFFFFF;--codebg:#F4F4F4;--outbg:#FBFBFB;}
+  *{box-sizing:border-box}
+  body{font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:var(--papel);margin:0;line-height:1.5;font-size:16px}
+  .wrap{max-width:980px;margin:0 auto;padding:40px 26px 90px}
+  .overline{font-size:12px;font-weight:bold;letter-spacing:2px;color:var(--laranja);text-transform:uppercase;margin:0 0 6px}
+  h1{font-size:30px;margin:0 0 6px;line-height:1.15}
+  h1 .k{color:var(--laranja)}
+  .sub{color:var(--grafite);font-size:16px;margin:0 0 22px}
+  .rule{height:4px;width:64px;background:var(--laranja);border:0;margin:16px 0 24px}
+  h2{font-size:21px;margin:42px 0 6px;padding-top:22px;border-top:2px solid var(--ink)}
+  h2 .num{color:var(--laranja);font-weight:bold}
+  h2 .clk{font-size:13px;font-weight:normal;color:var(--cinza);margin-left:8px}
+  .intro{color:var(--grafite);margin:6px 0 14px}
+  .frase{background:#FDECE4;border-left:5px solid var(--laranja);padding:16px 20px;border-radius:0 6px 6px 0;font-size:18px;margin:18px 0}
+  .lead{background:#FAFAFA;border:1px solid var(--claro);border-radius:6px;padding:16px 18px;margin:16px 0}
+  .lead .lbl{font-size:11px;font-weight:bold;letter-spacing:1.5px;color:var(--laranja);text-transform:uppercase;display:block;margin-bottom:4px}
+  .meta{display:flex;gap:22px;flex-wrap:wrap;margin:10px 0 0;font-size:14px;color:var(--grafite)}
+  .meta b{color:var(--ink)}
+  .step{display:grid;grid-template-columns:44px 1fr;gap:14px;margin:18px 0;align-items:start}
+  .badge{background:var(--ink);color:#fff;font-weight:bold;font-size:15px;border-radius:8px;text-align:center;padding:7px 0;line-height:1.1}
+  .badge.hot{background:var(--laranja)}
+  .stepbody h3{font-size:16px;margin:2px 0 8px}
+  .do{font-size:11px;font-weight:bold;letter-spacing:1.2px;color:var(--laranja);text-transform:uppercase;margin:12px 0 3px}
+  code,kbd{font-family:"Courier New",monospace;background:var(--codebg);padding:1px 5px;border-radius:3px;font-size:14px}
+  pre{font-family:"Courier New",monospace;background:var(--codebg);border:1px solid var(--claro);padding:11px 13px;border-radius:5px;overflow-x:auto;font-size:13.5px;line-height:1.45;margin:6px 0;white-space:pre}
+  pre.out{background:var(--outbg);border-style:dashed}
+  pre .o{color:var(--laranja);font-weight:bold}
+  pre .c{color:var(--cinza)}
+  .outlbl{font-size:11px;font-weight:bold;letter-spacing:1px;color:var(--grafite);text-transform:uppercase;margin:10px 0 2px}
+  .warn{border-left:4px solid var(--laranja);background:#FDECE4;padding:9px 13px;margin:10px 0;border-radius:0 4px 4px 0;font-size:14px}
+  .warn b{color:var(--ink)}
+  .info{border-left:4px solid var(--cinza);background:#F6F6F6;padding:9px 13px;margin:10px 0;border-radius:0 4px 4px 0;font-size:14px;color:var(--grafite)}
+  .chk{margin:14px 0 0;padding:12px 15px;background:#FDECE4;border-radius:6px;font-size:14.5px}
+  .chk b{color:var(--ink)}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+  th,td{border-bottom:1px solid var(--claro);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--ink);color:#fff;font-size:12px}
+  td.p{white-space:nowrap;font-weight:bold}
+  ul.sq{list-style:none;padding-left:0}
+  ul.sq li{position:relative;padding-left:22px;margin:6px 0}
+  ul.sq li::before{content:"";position:absolute;left:0;top:7px;width:9px;height:9px;background:var(--laranja)}
+  .foot{margin-top:52px;padding-top:16px;border-top:1px solid var(--claro);color:var(--cinza);font-size:13px}
+  .svgbox{border:1px solid var(--claro);border-radius:6px;padding:12px;margin:14px 0;background:#fff}
+  .svgbox svg{width:100%;height:auto;display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="overline">Engenharia de Dados · Ciclo 5 · Exercício</p>
+  <h1>Exercício 04 — a pergunta da madrugada cabe <span class="k">na meta que vocês declaram</span></h1>
+  <p class="sub">A trusted da startup em Parquet particionado, em Terraform, na conta do grupo. Primeiro incremento da Parte 2 do projeto. Rode o <code>verifica.sh</code> antes de entregar.</p>
+  <hr class="rule">
+
+  <div class="frase">
+    No Lab 05 a mesma pergunta leu <b>112 MB</b> em JSON, <b>1,6 MB</b> em Parquet e <b>0,4 MB</b> em Parquet particionado por dia. Hoje quem decide o layout são vocês — e, antes de medir, vocês <b>declaram</b> quantos bytes a pergunta da madrugada de 7 dias pode ler. A meta tem de caber em <b>1 MiB</b>. O Athena confirma ou desmente.
+  </div>
+
+  <div class="lead">
+    <span class="lbl">A diferença para o Lab 05</span>
+    <table>
+      <tr><th></th><th>Lab 05 (Aula 20)</th><th>Exercício 04 (hoje)</th></tr>
+      <tr><td><b>Quem executa</b></td><td>o professor, em CloudFormation</td><td>o grupo, em Terraform, com backend remoto</td></tr>
+      <tr><td><b>A trusted</b></td><td>a mesma tabela em três layouts, para comparar</td><td>uma tabela só, com o layout que o grupo escolhe</td></tr>
+      <tr><td><b>Partição</b></td><td><code>dt</code>, decidida pelo template</td><td>DECISÃO 01, justificada com número</td></tr>
+      <tr><td><b>Registro das pastas</b></td><td><code>MSCK REPAIR TABLE</code> à mão</td><td>DECISÃO 05: MSCK ou <i>partition projection</i></td></tr>
+      <tr><td><b>O requisito novo</b></td><td>—</td><td><b>meta de custo por consulta, declarada e provada</b></td></tr>
+    </table>
+  </div>
+
+  <div class="meta">
+    <div><b>Tempo:</b> 90 min, em aula</div>
+    <div><b>Região:</b> us-east-1</div>
+    <div><b>Custo teto:</b> US$ 1,00</div>
+    <div><b>Provisionamento:</b> Terraform</div>
+    <div><b>Entrega:</b> PR ao fim da aula</div>
+    <div><b>Vale:</b> a trusted em Parquet da Parte 2 (AV2)</div>
+  </div>
+
+  <h2><span class="num">O que vocês vão construir</span></h2>
+  <div class="svgbox"><svg viewBox="0 0 940 230" role="img" aria-label="Arquitetura do Exercício 04">
+<style>.t{font:bold 14px Arial;fill:#1A1A1A}.s{font:12px Arial;fill:#4D4D4D}.o{font:bold 12px Arial;fill:#F15A22}.cx{fill:#F7F7F7;stroke:#BFBFBF}.hot{fill:#FDEFE9;stroke:#F15A22;stroke-width:2}</style>
+<defs><marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8A8A8A"/></marker></defs>
+<rect x="10" y="20" width="920" height="200" rx="8" fill="none" stroke="#8A8A8A" stroke-dasharray="6 4"/>
+<text x="24" y="42" class="s">sua conta · us-east-1 · tudo em Terraform, estado no backend remoto</text>
+<rect x="30" y="70" width="170" height="110" rx="6" class="cx"/><text x="45" y="98" class="t">S3 · raw</text><text x="45" y="120" class="s">JSON, 30 dias</text><text x="45" y="140" class="s">≈ 112 MB</text><text x="45" y="160" class="s">carregar-raw.sh</text>
+<line x1="200" y1="125" x2="250" y2="125" stroke="#8A8A8A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="255" y="70" width="170" height="110" rx="6" class="cx"/><text x="270" y="98" class="t">Job Glue</text><text x="270" y="120" class="s">grava 1 vez</text><text x="270" y="140" class="o">DECISÕES 01 e 02</text><text x="270" y="160" class="s">rodar-job.sh</text>
+<line x1="425" y1="125" x2="475" y2="125" stroke="#8A8A8A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="480" y="70" width="190" height="110" rx="6" class="hot"/><text x="495" y="98" class="t">S3 · trusted</text><text x="495" y="120" class="s">Parquet + Snappy</text><text x="495" y="140" class="s">particionada</text><text x="495" y="160" class="o">DECISÃO 05: registro</text>
+<line x1="670" y1="125" x2="720" y2="125" stroke="#8A8A8A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="725" y="70" width="190" height="110" rx="6" class="cx"/><text x="740" y="98" class="t">Athena</text><text x="740" y="120" class="o">meta ≤ 1 MiB (03)</text><text x="740" y="140" class="o">teto do workgroup (04)</text><text x="740" y="160" class="s">verifica.sh prova</text>
+</svg></div>
+
+  <h2><span class="num">Custo e limpeza, antes de começar</span></h2>
+  <p class="intro">Uma execução completa custa <b>menos de US$ 0,50</b>: o job Glue (2 DPU por ~4 min ≈ US$ 0,06), o Athena (frações de centavo) e o S3 (centavos por mês). Nada cobra por hora ligada. Para sair a qualquer momento:</p>
+  <pre>terraform -chdir=terraform destroy</pre>
+
+  <h2><span class="num">Passo a passo</span><span class="clk">checkpoints em 20 e 40 min</span></h2>
+  <p class="intro">Todos os comandos saem da raiz do pacote, salvo quando o passo diz <code>cd terraform</code>.</p>
+<div class="step"><div class="badge">1</div><div class="stepbody">
+<h3>Prepare o backend e as variáveis</h3>
+<p class="intro">Ao fim, o Terraform sabe onde guardar o estado e quais são as suas cinco decisões. As decisões ainda não estão tomadas: o <code>plan</code> recusa até você decidir.</p>
+<div class="do">Digite</div>
+<pre>cd terraform
+cp backend.hcl.example backend.hcl            # troque CONTA e XX
+cp terraform.tfvars.example terraform.tfvars  # troque sufixo; as DECISÕES vêm nos passos 3 e 4</pre>
+<div class="warn"><b>Armadilha.</b> Sufixo com hífen ou maiúscula: o Glue recusa. Use só minúsculas e números (<code>grupo07</code>).</div>
+</div></div>
+<div class="step"><div class="badge">2</div><div class="stepbody">
+<h3>Leia o ponto de partida antes de rodar</h3>
+<p class="intro">Ao fim, você sabe o que vem pronto e onde estão as cinco marcas <code>DECISÃO</code>. Abra <code>main.tf</code>, <code>variables.tf</code> e <code>scripts/trusted-parquet.py</code>.</p>
+<ul class="sq">
+<li><b>Pronto:</b> bucket, raw declarada (9 colunas), papel do job, o job Glue, o workgroup e o script PySpark.</li>
+<li><b>Seu:</b> as três linhas que fazem a trusted ser Parquet (marcadas com <code>← completar</code>), o <code>local.projecao</code> (DECISÃO 05) e as quatro variáveis das DECISÕES 01 a 04.</li>
+<li>O script <b>não</b> precisa mudar: ele lê a chave de partição e os arquivos por pasta como argumentos do job, declarados no Terraform.</li></ul></div></div>
+<div class="step"><div class="badge hot">3</div><div class="stepbody">
+<h3>Decida o layout: partição e arquivos por pasta (DECISÕES 01 e 02)</h3>
+<p class="intro">Ao fim, <code>chaves_particao</code> e <code>arquivos_por_pasta</code> estão preenchidos no <code>terraform.tfvars</code>, e você sabe dizer quantos arquivos a pergunta de 7 dias vai abrir.</p>
+<div class="do">Digite</div>
+<pre>chaves_particao    = ["dt"]   # ou ["dt", "bairro"] — Aula 19
+arquivos_por_pasta = 1        # de 1 a 4</pre>
+<div class="warn"><b>Armadilha.</b> Mais arquivos não é mais rápido neste volume: um dia inteiro tem ~600 KB em Parquet. Cada arquivo a mais é um rodapé e um pedido ao S3 a mais (Aula 19).</div>
+</div></div>
+<div class="step"><div class="badge hot">4</div><div class="stepbody">
+<h3>Declare a meta e o teto (DECISÕES 03 e 04)</h3>
+<p class="intro">Ao fim, a meta da pergunta da madrugada (≤ 1 MiB) e o teto do workgroup (≥ 10 MiB) estão declarados. A meta é a promessa; o teto é o freio.</p>
+<div class="do">Digite</div>
+<pre>meta_bytes_madrugada = …   # ≤ 1048576 — de que conta ela saiu?
+teto_bytes           = …   # ≥ 10485760 — e abaixo da trusted inteira</pre>
+<div class="warn"><b>Armadilha.</b> Teto acima da trusted inteira (~18 milhões de bytes) nunca freia nada: o critério 5 cai.</div>
+</div></div>
+<div class="step"><div class="badge">5</div><div class="stepbody">
+<h3>Complete a trusted: Parquet e registro das partições (DECISÃO 05)</h3>
+<p class="intro">Ao fim, a <code>aws_glue_catalog_table.trusted</code> é Parquet e o Athena tem um jeito de achar as pastas: <code>MSCK REPAIR TABLE</code> depois do job (mapa vazio) ou <i>partition projection</i>.</p>
+<div class="info">As três linhas do Parquet são as mesmas da <code>corridas_parquet</code> do Lab 05 (<code>infra/template.yaml</code>). Para a projeção, o comentário em <code>main.tf</code> lista os parâmetros; o caminho já está pronto em <code>local.template_caminho</code>.</div>
+<div class="warn"><b>Armadilha.</b> Projeção com uma janela de datas que não cobre os 30 dias: as pastas de fora ficam invisíveis, sem erro, e a contagem não fecha 518.400.</div>
+</div></div>
+<div class="step"><div class="badge">6</div><div class="stepbody">
+<h3>Suba a stack</h3>
+<p class="intro">Ao fim, os 11 recursos existem na sua conta e o estado está no backend remoto.</p>
+<div class="do">Digite</div>
+<pre>terraform init -backend-config=backend.hcl
+terraform apply
+cd ..</pre>
+<div class="outlbl">Você deve ver</div>
+<pre class="out">Apply complete! Resources: 11 added, 0 changed, 0 destroyed.</pre>
+<div class="warn"><b>Armadilha.</b> <code>expected ... serialization_library to not be an empty string</code> = faltaram as três linhas do Parquet (passo 5).</div>
+</div></div>
+<div class="step"><div class="badge">7</div><div class="stepbody">
+<h3>Carregue a raw</h3>
+<p class="intro">Ao fim, a raw do seu bucket tem os mesmos 30 dias dos Labs 04 e 05, byte a byte (seed 42).</p>
+<div class="do">Digite</div>
+<pre>./carregar-raw.sh</pre>
+<div class="outlbl">Você deve ver</div>
+<pre class="out">Total Objects: 30
+   Total Size: 117655606</pre>
+<div class="warn"><b>Armadilha.</b> Rede lenta: o upload de ~112 MB pode passar de 3 minutos. Rode o passo 7 assim que o apply terminar.</div>
+</div></div>
+<div class="step"><div class="badge hot">8</div><div class="stepbody">
+<h3>Rode o job</h3>
+<p class="intro">Ao fim, a trusted existe em Parquet, com o seu layout, e o relatório confere 518.400 linhas sem valor nulo.</p>
+<div class="do">Digite</div>
+<pre>./rodar-job.sh</pre>
+<div class="outlbl">Você deve ver</div>
+<pre class="out">10:02:11  RUNNING
+…
+10:05:40  SUCCEEDED
+{ "linhas_trusted": 518400, "dias": 30, "arquivos": …, <span class="o">"ok": true</span> }</pre>
+<div class="warn"><b>Armadilha.</b> <code>FAILED</code>: o script imprime o <code>ErrorMessage</code>. O mais comum é a raw vazia (passo 7 não rodou).</div>
+</div></div>
+<div class="step"><div class="badge">9</div><div class="stepbody">
+<h3>Meça a pergunta da madrugada no Athena</h3>
+<p class="intro">Ao fim, você tem o <b>Data scanned</b> real da pergunta de 7 dias, para escrever as DECISÕES 03 e 04 com número.</p>
+<div class="do">Digite</div>
+<pre>python3 -c 'import datetime as d; print(d.date.today() - d.timedelta(days=6))'   # o DESDE</pre>
+<div class="do">No Athena (workgroup <code>eda-a21-wg-&lt;sufixo&gt;</code>)</div>
+<pre>SELECT bairro, count(*) AS corridas, round(sum(valor), 2) AS receita
+FROM eda_a21_&lt;sufixo&gt;.trusted_corridas
+WHERE dt &gt;= '&lt;DESDE&gt;' AND faixa_hora BETWEEN 0 AND 5
+GROUP BY bairro;</pre>
+<div class="outlbl">Você deve ver</div>
+<pre class="out">22 linhas, somando <span class="o">11.137 corridas</span> · Data scanned: abaixo da sua meta</pre>
+<div class="warn"><b>Armadilha.</b> Leitura muito acima do Lab 05 (0,4 MB)? Confira se filtrou por <code>dt</code>, a chave do caminho, e não por <code>date(inicio)</code>: o erro que não dá erro.</div>
+</div></div>
+<div class="step"><div class="badge">10</div><div class="stepbody">
+<h3>Rode a verificação</h3>
+<p class="intro">Ao fim, o <code>verifica.sh</code> imprime PASSA nos critérios 0 a 5.</p>
+<div class="do">Digite</div>
+<pre>./verificacao/verifica.sh</pre>
+<div class="outlbl">Você deve ver</div>
+<pre class="out">Critérios automáticos: 70 / 70 pontos-percentuais</pre>
+<div class="warn"><b>Armadilha.</b> Critério 4 falhou com a resposta certa? A meta está apertada demais para o seu layout. Mude o layout (DECISÕES 01 e 02) antes de afrouxar a meta.</div>
+</div></div>
+<div class="step"><div class="badge">11</div><div class="stepbody">
+<h3>Escreva o DECISOES.md</h3>
+<p class="intro">Ao fim, cada uma das cinco decisões tem uma frase e um número medido: arquivos abertos, bytes lidos, tamanho do arquivo.</p>
+<div class="info">O modelo está em <code>DECISOES.md</code>, na raiz. Justificativa sem número não pontua.</div>
+</div></div>
+<div class="step"><div class="badge">12</div><div class="stepbody">
+<h3>Destrua e confira</h3>
+<p class="intro">Ao fim, nenhum recurso <code>eda-a21-*</code> sobra na conta. Destroy limpo é critério de aceite.</p>
+<div class="do">Digite</div>
+<pre>terraform -chdir=terraform destroy
+./verificacao/verifica.sh --pos-destroy
+rm -rf /tmp/eda-a21</pre>
+<div class="outlbl">Você deve ver</div>
+<pre class="out">PASSA  [6]  (10%)  nenhum recurso eda-a21-*-&lt;sufixo&gt; sobrou.</pre>
+</div></div>
+
+  <h2><span class="num">As cinco decisões</span></h2>
+  <p class="intro">Cada decisão mora num lugar marcado do código e vira uma frase no <code>DECISOES.md</code>, com número.</p>
+  <table><tr><th>#</th><th>Decisão</th><th>Onde</th><th>A frase precisa dizer</th></tr><tr><td class="p">01</td><td><b>Chave de partição</b></td><td><code>variables.tf</code> · <code>chaves_particao</code></td><td>quantos arquivos a pergunta de 7 dias abre</td></tr><tr><td class="p">02</td><td><b>Arquivos por pasta</b></td><td><code>variables.tf</code> · <code>arquivos_por_pasta</code></td><td>o tamanho de cada arquivo e quanto de rodapé a pergunta lê</td></tr><tr><td class="p">03</td><td><b>A meta de custo</b></td><td><code>variables.tf</code> · <code>meta_bytes_madrugada</code></td><td>de que medição ela saiu, e o Data scanned real</td></tr><tr><td class="p">04</td><td><b>O teto do workgroup</b></td><td><code>variables.tf</code> · <code>teto_bytes</code></td><td>o que ele deixa passar, o que barra e o preço disso</td></tr><tr><td class="p">05</td><td><b>O registro das partições</b></td><td><code>main.tf</code> · <code>local.projecao</code></td><td>MSCK ou projeção, e o que acontece no dia 31</td></tr></table>
+
+  <h2><span class="num">Critérios de aceite</span></h2>
+  <p class="intro">É a rubrica pública, literal. O <code>verifica.sh</code> imprime cada linha como PASSA ou FALHA.</p>
+  <table><tr><th>#</th><th>Critério</th><th>Como</th><th>Peso</th></tr><tr><td class="p">0</td><td>Terraform com backend remoto; trusted declarada como Parquet</td><td>verifica.sh</td><td class="p">elimina</td></tr><tr><td class="p">1</td><td>Partição com <code>dt</code> como 1ª chave e as 10 colunas</td><td>verifica.sh · Glue</td><td class="p">15%</td></tr><tr><td class="p">2</td><td>518.400 corridas em 30 dias</td><td>verifica.sh · Athena</td><td class="p">10%</td></tr><tr><td class="p">3</td><td>No máximo 4 arquivos por pasta</td><td>verifica.sh · S3</td><td class="p">10%</td></tr><tr><td class="p">4</td><td><b>Meta ≤ 1 MiB e a pergunta de 7 dias lê menos que ela, com 11.137 corridas</b></td><td>verifica.sh · Athena</td><td class="p"><b>25%</b></td></tr><tr><td class="p">5</td><td>Teto com enforce, e a consulta de todas as colunas é barrada</td><td>verifica.sh · Athena</td><td class="p">10%</td></tr><tr><td class="p">6</td><td>Destroy limpo</td><td>verifica.sh --pos-destroy</td><td class="p">10%</td></tr><tr><td class="p">7</td><td>DECISOES.md: uma frase e um número por decisão</td><td>leitura</td><td class="p">20%</td></tr></table>
+  <div class="info"><b>O critério 4 é o exercício.</b> A resposta certa com a leitura acima da meta é FALHA: a meta é uma promessa de custo, e a pergunta tem de cumpri-la.</div>
+
+  <h2><span class="num">Checkpoints</span></h2>
+  <ul class="sq">
+    <li><b>20 min</b> — apply concluído (passo 6) e raw carregada (passo 7).</li>
+    <li><b>40 min</b> — job em <code>SUCCEEDED</code> e a pergunta medida no Athena (passos 8 e 9).</li>
+    <li><b>75 min</b> — <code>verifica.sh</code> verde, <code>DECISOES.md</code> escrito e PR aberto.</li>
+  </ul>
+
+  <h2><span class="num">Se travar, nesta ordem</span></h2>
+  <ul class="sq">
+    <li>Leia a mensagem de erro inteira, até a última linha.</li>
+    <li>Leia o <code>plan</code>: ele diz o que vai mudar antes de mudar.</li>
+    <li>Abra o roteiro do Lab 05: os passos 3 a 8 são os mesmos comandos, em CloudFormation.</li>
+    <li>Chame o professor.</li>
+  </ul>
+
+  <h2><span class="num">O que não conta na nota</span></h2>
+  <ul class="sq">
+    <li>Elegância do HCL e número de arquivos do repositório.</li>
+    <li>Ter escolhido a mesma partição do Lab 05 — conta saber por quê, com número.</li>
+  </ul>
+
+  <p class="foot">Engenharia de Dados · Exercício 04 (Aula 21) · CESAR School · Graduação em Ciência da Computação. Este enunciado abre offline; nenhuma dependência externa.</p>
+
+</div>
+</body>
+</html>
