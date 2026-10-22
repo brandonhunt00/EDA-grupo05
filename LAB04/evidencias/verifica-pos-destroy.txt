@@ -1,0 +1,9 @@
+# verifica.sh --pos-destroy (oficial, sem alteracao)
+Critério 6 — destroy limpo
+----------------------------------------------------------------
+PASSA  [6]  (10%)  nenhum recurso eda-a21-*- sobrou.
+----------------------------------------------------------------
+Critério 6: 10/10%
+
+# as mesmas 5 checagens do criterio 6, com sufixo=grupo05 (ver NOTA-CRITERIO-6.md)
+PASSA  [6]  (10%)  nenhum recurso eda-a21-*-grupo05 sobrou: bucket, job, database, workgroup e papel inexistentes.
